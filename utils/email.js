@@ -24,8 +24,14 @@ const sendEmail = async (options) => {
     // text: options.message // 如果不想用 HTML 格式可用純文字
   };
 
-  // 3. 發送
-  await transporter.sendMail(mailOptions);
+  try {
+      console.log("🚀 準備發送郵件至:", options.to);
+      const info = await transporter.sendMail(mailOptions);
+      console.log("郵件發送成功！伺服器回應:", info.response);
+  } catch (error) {
+      console.error("nodemailer 寄信失敗！詳細錯誤碼:", error);
+      throw error; // 確保錯誤能被外層的 authController 抓到
+  }
 };
 
 export default sendEmail;

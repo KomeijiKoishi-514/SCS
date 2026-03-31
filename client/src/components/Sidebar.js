@@ -88,7 +88,7 @@ return (
             isCollapsed ? "w-0 opacity-0" : "w-full opacity-100"
           }`}
         >
-          學程地圖系統
+          學生修業系統
         </h1>
       </Link>
 

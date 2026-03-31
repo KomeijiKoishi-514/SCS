@@ -18,8 +18,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      // 🔥 呼叫後端 API
-      // 這個 /auth/forgot-password 我們等一下會在後端實作
+      // 呼叫後端 API
       const res = await api.post('/auth/forgot-password', { email });
       
       // API 呼叫成功，顯示後端回傳的訊息

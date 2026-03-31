@@ -19,6 +19,7 @@ import ForgotPasswordPage from "./pages/forgotpasswordpage";
 import ProfilePage from "./pages/profilepage";
 import ResetPasswordPage from "./pages/resetpasswordpage";
 import ExportPreviewPage from "./pages/exportpreviewpage";
+import { ComputerDesktopIcon } from "@heroicons/react/24/outline";
 // 側邊攔
 import Sidebar from "./components/Sidebar";
 import { Toaster } from 'react-hot-toast'
@@ -84,7 +85,24 @@ export default function App() {
   };
 
   return (
+    
     <Router>
+      {/* 浮士德的防禦機制：僅在手機螢幕 (小於 md 斷點) 顯示，並蓋住所有內容 */}
+      <div className="md:hidden fixed inset-0 z-[9999] bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-8 text-center">
+        <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center">
+          <ComputerDesktopIcon className="h-16 w-16 text-blue-600 mb-4 animate-bounce" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">請使用電腦版瀏覽</h2>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            本學程地圖系統包含複雜的網狀結構與學分運算儀表板。<br/>
+            為確保您的最佳操作體驗，請使用<b>平板或桌上型電腦</b>開啟本網頁。
+          </p>
+        </div>
+      </div>
+
+      {/* 以下是你原本的路由與畫面元件 */}
+      <div className="hidden md:block">
+         {/* <RouterProvider router={router} /> 或你的原有內容 */}
+      </div>
       <div className="flex flex-row h-screen bg-gray-100 relative overflow-hidden">
         
         {/* 🔥 2. 在這裡放入 Toaster 元件 */}

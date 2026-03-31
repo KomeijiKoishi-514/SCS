@@ -21,7 +21,7 @@ export const getCourses = async (req, res) => {
     }
 
     // 3. 組合 SQL
-    const query = `
+const query = `
       SELECT 
         c.course_id,
         c.course_name,
@@ -50,6 +50,15 @@ export const getCourses = async (req, res) => {
             WHERE m.course_id = c.course_id
           ),
         '{}') AS categories,
+
+        COALESCE(
+          ARRAY(
+            SELECT m.category_id
+            FROM course_category_map m
+            WHERE m.course_id = c.course_id
+          ),
+        '{}') AS category_ids,
+
         COALESCE(
           ARRAY(
             SELECT mc.module_id

@@ -141,27 +141,44 @@ export const importModuleToPlan = async (req, res) => {
 
         // 3. 抓出學生「已修過」或「已規劃」的課程 ID (避免重複)
         const recordsResult = await pool.query("SELECT course_id FROM student_course_records WHERE user_id = $1", [userId]);
-        const plansResult = await pool.query("SELECT course_id FROM course_plans WHERE user_id = $1", [userId]);
+        const plansResult = await pool.query("SELECT course_id FROM student_course_plans WHERE user_id = $1", [userId]);
 
         const existingCourseIds = new Set([
             ...recordsResult.rows.map(r => r.course_id),
             ...plansResult.rows.map(r => r.course_id)
         ]);
 
-        // 4. 準備要寫入的資料 (Smart Scheduling)
+// 4. 準備要寫入的資料 (Smart Scheduling)
         const plansToInsert = [];
 
         moduleCourses.forEach(course => {
             if (!existingCourseIds.has(course.course_id)) {
-                // 自動推算邏輯：目標學年 = 入學年 + (課程年級 - 1)
-                const yearOffset = (course.year_level || 1) - 1; 
-                const targetYear = enrollmentYear + yearOffset;
+                
+                // 1. 強制轉為整數
+                const parsedEnrollmentYear = parseInt(enrollmentYear, 10);
+                const parsedYearLevel = parseInt(course.year_level, 10) || 1; 
+                
+                // 2. 修正推算邏輯：將 1~8 學期序號，轉換為 0~3 的學年偏移量
+                const yearOffset = Math.ceil(parsedYearLevel / 2) - 0; 
+                const targetYear = parsedEnrollmentYear + yearOffset;
+                
+                // 3. 學期字串轉換邏輯 (處理 "四年級下" 等髒資料)
+                let parsedSemester = 1; 
+                if (typeof course.semester === 'string') {
+                    if (course.semester.includes('下') || course.semester === '2') {
+                        parsedSemester = 2;
+                    } else if (course.semester.includes('上') || course.semester === '1') {
+                        parsedSemester = 1;
+                    }
+                } else if (typeof course.semester === 'number') {
+                    parsedSemester = course.semester;
+                }
                 
                 plansToInsert.push({
                     user_id: userId,
                     course_id: course.course_id,
-                    academic_year: targetYear,
-                    semester: course.semester
+                    academic_year: targetYear,  // 現在會正確算出 112~115 了
+                    semester: parsedSemester
                 });
             }
         });
@@ -170,7 +187,7 @@ export const importModuleToPlan = async (req, res) => {
         if (plansToInsert.length > 0) {
             const insertPromises = plansToInsert.map(plan => {
                 return pool.query(
-                    "INSERT INTO course_plans (user_id, course_id, academic_year, semester) VALUES ($1, $2, $3, $4)",
+                    "INSERT INTO student_course_plans (user_id, course_id, academic_year, semester) VALUES ($1, $2, $3, $4)",
                     [plan.user_id, plan.course_id, plan.academic_year, plan.semester]
                 );
             });

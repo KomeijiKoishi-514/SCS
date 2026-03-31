@@ -156,7 +156,7 @@ const ProgressBar = ({ label, current, total, color }) => {
 };
 
 // =========================================================
-// 🗺️ 自定義元件：可拖曳、可縮小的懸浮地圖 (FloatingMiniMap)
+// 自定義元件：可拖曳、可縮小的懸浮地圖 (FloatingMiniMap)
 // =========================================================
 const FloatingMiniMap = memo(({ nodes }) => {
   const [isMinimized, setIsMinimized] = useState(false);
@@ -169,7 +169,7 @@ const FloatingMiniMap = memo(({ nodes }) => {
       dragControls={dragControls} // 綁定控制器
       dragMomentum={false}
       initial={{ x: 0, y: 0 }}
-      // 🔥 3. 確保寬度是固定的 (w-64)，並加入 pointer-events-auto 確保能接收事件
+      // 確保寬度是固定的 (w-64)，並加入 pointer-events-auto 確保能接收事件
       className="nopan absolute z-50 right-5 bottom-5 flex flex-col items-end shadow-2xl rounded-lg overflow-hidden border border-gray-200 bg-white w-64 pointer-events-auto"
       style={{ 
         height: isMinimized ? 'auto' : 'auto', // 高度自動適應內容
@@ -178,7 +178,7 @@ const FloatingMiniMap = memo(({ nodes }) => {
     >
       {/* 標題列 (拖曳手把) */}
       <div 
-        // 🔥 4. 在這裡綁定拖曳啟動事件 (onPointerDown)
+        // 在這裡綁定拖曳啟動事件 (onPointerDown)
         onPointerDown={(e) => dragControls.start(e)}
         className="w-full h-8 bg-gray-100 border-b border-gray-200 flex items-center justify-between px-3 cursor-move hover:bg-gray-200 transition-colors select-none"
       >
@@ -210,7 +210,7 @@ const FloatingMiniMap = memo(({ nodes }) => {
             transition={{ duration: 0.2 }}
             className="w-full bg-white relative"
           >
-            {/* 🔥 5. 包一層 div 強制給予具體高度，解決 MiniMap 讀不到尺寸變灰色的問題 */}
+            {/* 包一層 div 強制給予具體高度，解決 MiniMap 讀不到尺寸變灰色的問題 */}
             <div className="h-40 w-full relative"> 
                 <MiniMap 
                   pannable 

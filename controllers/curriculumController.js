@@ -18,8 +18,9 @@ export async function getCurriculumByDept(req, res) {
       return map[level] || "未指定";
     }
 
+    // 💡 修改 1：在 SELECT 中補上 c.type，這樣前端才能判斷是不是必修課
     const courseQuery = `
-      SELECT c.course_id, c.course_name, c.credits, c.year_level, c.semester
+      SELECT c.course_id, c.course_name, c.credits, c.year_level, c.semester, c.type
       FROM courses c 
       WHERE c.dept_id = $1 OR c.dept_id = 0
       ORDER BY c.year_level ASC;
@@ -30,8 +31,9 @@ export async function getCurriculumByDept(req, res) {
       FROM course_prerequisite;
     `;
 
+    // 💡 修改 2：在 SELECT 中多要一個 ccm.category_id
     const categoriesQuery = `
-      SELECT ccm.course_id, cat.category_name
+      SELECT ccm.course_id, cat.category_name, ccm.category_id
       FROM course_category_map ccm
       JOIN categories cat ON ccm.category_id = cat.category_id;
     `;
@@ -45,7 +47,7 @@ export async function getCurriculumByDept(req, res) {
     // course_id → course info
     const courseMap = {};
 
-    // 先加入基本資料
+    // 💡 修改 3：初始化時，準備好 category_ids 陣列，並存入 type
     courses.rows.forEach((c) => {
       courseMap[c.course_id] = {
         course_id: c.course_id,
@@ -54,14 +56,17 @@ export async function getCurriculumByDept(req, res) {
         year_level: c.year_level,
         year_text: convertYearText(c.year_level), // 新增中文年級
         semester: c.semester,
+        type: c.type, // 把 type 傳給前端
         categories: [],
+        category_ids: [], // 準備用來裝數字 ID 的陣列
       };
     });
 
-    // 加入分類
+    // 💡 修改 4：把撈到的數字 ID 也塞進陣列裡
     categories.rows.forEach((cat) => {
       if (courseMap[cat.course_id]) {
         courseMap[cat.course_id].categories.push(cat.category_name);
+        courseMap[cat.course_id].category_ids.push(cat.category_id); // 數字 ID 正式上車！
       }
     });
 

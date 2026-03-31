@@ -42,10 +42,10 @@ export default function HomePage() {
     }
   };
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.5 } }
-  };
+  //const itemVariants = {
+  //  hidden: { y: 20, opacity: 0 },
+  //  visible: { y: 0, opacity: 1, transition: { duration: 0.5 } }
+  //};
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-hidden">
@@ -74,7 +74,7 @@ export default function HomePage() {
             transition={{ delay: 0.2, duration: 0.6 }}
             className="text-4xl tracking-tight font-extrabold sm:text-5xl md:text-6xl"
           >
-            {isLoggedIn ? `歡迎回來，${userName}！` : "歡迎來到學程地圖系統"}
+            {isLoggedIn ? `歡迎回來，${userName}！` : "歡迎使用學生修業系統"}
           </motion.h1>
           <motion.p
             initial={{ y: 20, opacity: 0 }}

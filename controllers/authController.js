@@ -266,10 +266,9 @@ export async function forgotPassword(req, res) {
     const user = userResult.rows[0];
 
     if (!user) {
-      // 🔒 安全考量：
-      // 即使 Email 不存在，我們也回傳一個「模稜兩可」的成功訊息。
+      // 即使 Email 不存在，也要說已經發送。
       // 這是為了防止惡意人士透過 API 來探測哪些 Email 已經註冊過。
-      return res.status(200).json({ message: "如果您的 Email 存在於系統中，我們已發送重設連結給您。請檢查您的信箱（包含垃圾郵件匣）。" });
+      return res.status(200).json({ message: "重設連結已發送至您的 Email。請檢查您的信箱（包含垃圾郵件匣）。" });
     }
 
     // 3. 產生隨機 Token (原始 Token，將寄給使用者)

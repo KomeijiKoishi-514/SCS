@@ -163,7 +163,10 @@ export default function CurriculumMap() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
+  //  該分類課程
   const [rawCourses, setRawCourses] = useState([]);
+  //  全課程紀錄
+  const [allCourses, setAllCourses] = useState([]);
   //  選擇
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -202,16 +205,19 @@ export default function CurriculumMap() {
     setLoading(true);
     try {
       // 同時載入課程資料與修課紀錄
-      const [currRes, recRes] = await Promise.all([
+      const [currRes, recRes, allCoursesRes] = await Promise.all([
         api.get(`/curriculum/${deptId}`),
-        api.get("/records").catch(() => ({ data: {} })) // 如果沒登入或失敗，回傳空物件
+        api.get("/records").catch(() => ({ data: {} })), // 如果沒登入或失敗，回傳空物件
+        api.get("/courses") // 沒有帶 dept_id 就會回傳全校課程的 API
       ]);
 
       const { courses, prerequisites } = currRes.data;
       const records = recRes.data; // { 101: 'pass', ... }
+      const globalCourses = allCoursesRes.data; // 全校課程清單
 
       setRawCourses(courses);
       setRecordMap(records);
+      setAllCourses(globalCourses);
 
       // --- Layout 計算 (Grid System) ---
       const groups = {};
@@ -408,43 +414,95 @@ export default function CurriculumMap() {
 
 
 // =========================================================
-  // 7. 學分試算 (計算屬性) - 修正判斷邏輯 (雙重檢查)
-  // =========================================================
+// 7. 學分試算 - 終極 Debug 監視器版本
+// =========================================================
   const creditStats = useMemo(() => {
     let stats = {
-      compulsory: { current: 0, total: 60 }, 
-      elective: { current: 0, total: 30 },
-      general: { current: 0, total: 28 },
-      total: { current: 0, total: 128 }
+      total: { current: 0, total: 128 },
+      schoolRequired: { current: 0, total: 18 },
+      freeElective: { current: 0, total: 10 },
+      collegeRequired: { current: 0, total: 8 },
+      deptRequired: { current: 0, total: 54 },
+      groupRequired: { current: 0, total: 0 },
+      electiveTotal: { current: 0, total: 38 },
+      deptElective: { current: 0, total: 30 }
     };
+
+    console.log("================ 🚀 🎓 啟動學分計算引擎 ================");
   
-    rawCourses.forEach(c => {
-      // 1. 只有當狀態為 'pass' (已通過) 時才計算學分
+    allCourses.forEach(c => {
+      // 1. 只有當狀態為 'pass' 時才計算
       if (recordMap[c.course_id] === 'pass') {
-        const credits = Number(c.credits);
+        const credits = Number(c.credits) || 0;
         stats.total.current += credits;
   
-        // 只要任一來源包含「必修」二字，就視為必修
-        const categories = Array.isArray(c.categories) ? c.categories : [];
-        const isCompulsory = categories.some(cat => cat.includes('必修')) || (c.type && c.type.includes('必修'));
-        
-        // 同理，檢查是否為通識
-        const isGeneral = categories.some(cat => cat.includes('通識')) || (c.type && c.type.includes('通識'));
+        console.log(`\n🔍 正在處理: [${c.course_name}] (課程ID: ${c.course_id}, 學分: ${credits})`);
+        console.log(`   ➤ 後端給的 category_ids 原始值:`, c.category_ids, `(型別: ${typeof c.category_ids})`);
+        console.log(`   ➤ 後端給的 categories (中文) 原始值:`, c.categories);
 
-        if (isCompulsory) {
-            stats.compulsory.current += credits;
-        } 
-        else if (isGeneral) {
-            stats.general.current += credits;
-        } 
-        else {
-            // 既不是必修也不是通識，就歸類為選修
-            stats.elective.current += credits;
+        // 2. 解析陣列
+        let catIds = [];
+        if (Array.isArray(c.category_ids)) {
+            catIds = c.category_ids;
+            console.log(`   ➤ 判斷為: 標準陣列`);
+        } else if (typeof c.category_ids === 'string') {
+            catIds = c.category_ids.replace(/[{}[\]\s]/g, '').split(',').filter(Boolean);
+            console.log(`   ➤ 判斷為: 字串，清理並切割後得到陣列 ->`, catIds);
+        } else {
+            console.log(`   ⚠️ 警告: category_ids 是 undefined 或未知型別！`);
+        }
+        
+        // 3. 進入分類計算
+        if (catIds.length > 0) {
+            catIds.forEach(id => {
+                const catId = Number(id);
+                console.log(`   🎯 準備配對 ID: ${catId} (原始字元: '${id}')`);
+
+                switch (catId) {
+                    case 1:
+                        console.log(`      ✅ 成功配對: [系定必修] (+${credits} 學分)`);
+                        stats.deptRequired.current += credits;
+                        break;
+                    case 2:
+                        console.log(`      ✅ 成功配對: [系上選修] (+${credits} 學分, 同時計入總選修)`);
+                        stats.deptElective.current += credits;
+                        stats.electiveTotal.current += credits;
+                        break;
+                    case 3:
+                        console.log(`      ✅ 成功配對: [校定必修] (+${credits} 學分)`);
+                        stats.schoolRequired.current += credits;
+                        break;
+                    case 4:
+                        console.log(`      ✅ 成功配對: [院定必修] (+${credits} 學分)`);
+                        stats.collegeRequired.current += credits;
+                        break;
+                    case 5:
+                        console.log(`      ✅ 成功配對: [通識選修] (+${credits} 學分)`);
+                        stats.freeElective.current += credits;
+                        break;
+                    default:
+                        console.log(`      ❌ 失敗: 找不到對應的 ID (${catId})，被丟進選修池`);
+                        if (catId && !isNaN(catId)) {
+                             stats.electiveTotal.current += credits;
+                        }
+                        break;
+                }
+            });
+        } else {
+            console.log(`   ⚠️ 這門課沒有任何有效的 category_ids！`);
+            if (!c.type?.includes('必修')) {
+                 console.log(`      ➔ 且 type 不是必修課，被丟進選修池 (+${credits} 學分)`);
+                 stats.electiveTotal.current += credits;
+            } else {
+                 console.log(`      ➔ 但 type 是必修，忽略不計入選修`);
+            }
         }
       }
     });
+    
+    console.log("================ 🏁 學分計算結束 ================", stats);
     return stats;
-  }, [rawCourses, recordMap]);
+  }, [allCourses, recordMap]);
 
   // 匯出相關
   const exportCategories = useMemo(() => {
@@ -694,16 +752,30 @@ export default function CurriculumMap() {
             isInfoPanelCollapsed ? "pointer-events-none" : ""
           }`}
         >
-<div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-6">
+          <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mb-6">
             <h3 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
-              {/* 替換為 AcademicCapIcon */}
               <AcademicCapIcon className="w-6 h-6 text-blue-600" />
-              畢業進度試算
+              畢業門檻審查
             </h3>
-            {/* ... ProgressBar 們保持不變 ... */}
-            <ProgressBar label="必修學分" current={creditStats.compulsory.current} total={creditStats.compulsory.total} color="bg-red-500" />
-            <ProgressBar label="選修學分" current={creditStats.elective.current} total={creditStats.elective.total} color="bg-blue-500" />
-            <ProgressBar label="總學分" current={creditStats.total.current} total={creditStats.total.total} color="bg-green-600" />
+            
+            <ProgressBar label="畢業總學分" current={creditStats.total.current} total={creditStats.total.total} color="bg-green-600" />
+            
+            <hr className="my-3 border-gray-300 border-dashed" />
+            
+            <ProgressBar label="校定必修" current={creditStats.schoolRequired.current} total={creditStats.schoolRequired.total} color="bg-red-500" />
+            <ProgressBar label="院定必修" current={creditStats.collegeRequired.current} total={creditStats.collegeRequired.total} color="bg-red-500" />
+            <ProgressBar label="系定必修" current={creditStats.deptRequired.current} total={creditStats.deptRequired.total} color="bg-red-500" />
+            
+            <hr className="my-3 border-gray-300 border-dashed" />
+            
+            <ProgressBar label="(6) 選修總學分" current={creditStats.electiveTotal.current} total={creditStats.electiveTotal.total} color="bg-blue-500" />
+            
+            {/* 巢狀縮進：顯示系專選包含在選修總學分內 */}
+            <div className="pl-4 mt-1 opacity-90">
+              <ProgressBar label="↳ 本系專業選修" current={creditStats.deptElective.current} total={creditStats.deptElective.total} color="bg-indigo-400" />
+          </div>
+
+            <ProgressBar label="興趣自選" current={creditStats.freeElective.current} total={creditStats.freeElective.total} color="bg-yellow-500" />
           </div>
 
           {selectedCourse ? (

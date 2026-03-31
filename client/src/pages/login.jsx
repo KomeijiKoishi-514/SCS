@@ -1,14 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import api from '../api/axiosConfig';
 import { useNavigate, Link } from "react-router-dom";
 import { AcademicCapIcon } from "@heroicons/react/24/solid";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // 浮士德新增：密碼可視狀態
   const nav = useNavigate();
+
+  // 浮士德新增：十秒後自動隱藏密碼的計時器機制
+  useEffect(() => {
+    let timer;
+    if (showPassword) {
+      timer = setTimeout(() => {
+        setShowPassword(false);
+      }, 10000);
+    }
+    return () => clearTimeout(timer);
+  }, [showPassword]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -97,21 +110,43 @@ export default function Login() {
             </div>
 
             {/* 密碼輸入框 */}
-            <div>
+            <div className="relative pb-6"> {/* 浮士德修改：增加 pb-6 預留提示文字的絕對空間，防止畫面排版跳動 */}
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 密碼
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                placeholder="請輸入您的密碼"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                disabled={loading}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  className="appearance-none block w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="請輸入您的密碼"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                  tabIndex="-1"
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" aria-hidden="true" />
+                  )}
+                </button>
+              </div>
+              
+              {/* 浮士德新增：狀態提示文字 */}
+              {showPassword && (
+                <p className="absolute right-1 bottom-1 text-xs font-medium text-blue-500 animate-pulse">
+                  密碼將於 10 秒後自動隱藏
+                </p>
+              )}
             </div>
           </div>
 
