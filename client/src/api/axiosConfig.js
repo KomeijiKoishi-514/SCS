@@ -1,9 +1,6 @@
 import axios from "axios";
 
-const host=window.location.hostname;
-const port=3001;
-//const url=`https://my-super-project-api.loca.lt`;
-const url=`http://${host}:${port}/api`;
+const url = '/api';
 const api = axios.create({
   baseURL: url,
   headers: {
