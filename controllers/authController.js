@@ -295,7 +295,11 @@ export async function forgotPassword(req, res) {
     // 這個連結指向前端頁面，並在網址中包含原始的 resetToken
     // CLIENT_URL 是你在 .env 設定的前端網址 (例如 http://localhost:3000)
     //  ${process.env.CLIENT_URL}
-    const resetUrl = `http://${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    // 利用環境變數動態決定前端網址 by 浮士德
+    // 如果環境變數沒有設定，才預設退回 localhost:3000 (保護本機開發環境)
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
+    //const resetUrl = `http://${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
     // 8. 準備信件內容 (HTML 格式)
     const message = `
