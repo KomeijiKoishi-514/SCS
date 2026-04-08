@@ -4,6 +4,8 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import { neon } from "@neondatabase/serverless";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // 匯入路由
 import adminUserRoutes from "./routes/adminUserRoutes.js"
@@ -18,8 +20,11 @@ import recordRoutes from "./routes/recordRoutes.js";
 
 dotenv.config();
 
+// 建立 __dirname 的 ES Module 替代方案
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-app.use(cors());
 app.use(bodyParser.json());
 
 const corsOptions = {
@@ -61,6 +66,24 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/records", recordRoutes);
+
+
+// ======================================
+// 前端靜態檔案派發與 SPA 路由防呆
+// ======================================
+// 確定client和server.js在同一層
+// 如果前端是用 Vite 打包，通常會產生 'dist' 資料夾；如果是 CRA 則是 'build'
+// 若路徑不同，請修改 "client/dist" 這段字串。
+
+app.use(express.static(path.join(__dirname, "client/public")));
+
+// 捕捉所有非 API 開頭的請求，並將它們導向 React 的 index.html
+// 這樣當使用者直接重整網頁或手動輸入網址時，才不會出現 Cannot GET /xxx 的錯誤
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client/public/index.html"));
+});
+
+
 // ======================================
 //  啟動伺服器
 // ======================================
